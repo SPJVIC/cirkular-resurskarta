@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 font-sans text-slate-800 antialiased;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-slate-600;
+  }
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+  .section-title {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+  }
+}
+
+/* Kartmarkörer (Leaflet divIcon) */
+.crk-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--c);
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  transition: transform 0.15s ease, opacity 0.2s ease;
+  position: relative;
+}
+.crk-marker:hover {
+  transform: scale(1.25);
+}
+.crk-marker.is-secondary {
+  width: 13px;
+  height: 13px;
+  margin: 2.5px;
+}
+.crk-marker.is-selected {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.35), 0 1px 6px rgba(15, 23, 42, 0.4);
+}
+.crk-marker.is-dimmed {
+  opacity: 0.25;
+}
+.crk-marker.is-partner {
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18), 0 1px 4px rgba(15, 23, 42, 0.35);
+}
+.crk-marker .crk-user {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #7c3aed;
+  border: 1.5px solid #fff;
+}
+.crk-draft {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: rgba(124, 58, 237, 0.2);
+  border: 2px dashed #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+.crk-draft::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #7c3aed;
+  border: 2px solid #fff;
+}
+.crk-arrow {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crk-arrow svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+.leaflet-container.is-placing {
+  cursor: crosshair;
+}
+.leaflet-container {
+  font-family: inherit;
+  background: #f1f5f9;
+}
+.crk-muted-tiles {
+  filter: grayscale(0.75) brightness(1.06) contrast(0.92);
+}
+.leaflet-tooltip.crk-tooltip {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+}
