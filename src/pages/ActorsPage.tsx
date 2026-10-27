@@ -8,7 +8,7 @@ import { markerKind } from '../services/filtering';
 import { Badge, Button, MarkerDot } from '../components/ui';
 
 export default function ActorsPage() {
-  const { data, index, viableMatches, selectActor, setEditor, setDraft } = useApp();
+  const { data, index, viableMatches, selectActor, setEditor, setDraft, canCreate } = useApp();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [municipality, setMunicipality] = useState<Municipality | ''>('');
@@ -43,18 +43,20 @@ export default function ActorsPage() {
             {data.actors.length} aktörer i {new Set(data.actors.map((a) => a.municipality)).size} kommuner. Klicka på en rad för att visa aktören på kartan.
           </p>
         </div>
-        <Button
-          variant="primary"
-          icon={<Plus size={16} />}
-          onClick={() => {
-            selectActor(null);
-            setDraft(null);
-            setEditor({ kind: 'actor-create' });
-            navigate('/');
-          }}
-        >
-          Lägg till aktör
-        </Button>
+        {canCreate && (
+          <Button
+            variant="primary"
+            icon={<Plus size={16} />}
+            onClick={() => {
+              selectActor(null);
+              setDraft(null);
+              setEditor({ kind: 'actor-create' });
+              navigate('/');
+            }}
+          >
+            Lägg till aktör
+          </Button>
+        )}
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">

@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Building2, GitMerge, Map as MapIcon, Recycle, RotateCcw } from 'lucide-react';
+import { Building2, GitMerge, LogIn, Map as MapIcon, Recycle, ShieldCheck, UserRound } from 'lucide-react';
 import { useApp } from '../state/AppContext';
+import { useAuth } from '../state/AuthContext';
 import { DEMO_LABEL } from '../data/taxonomy';
-import { Button, ConfirmDialog } from './ui';
 
 const NAV = [
   { to: '/', label: 'Karta', icon: MapIcon },
@@ -12,8 +11,10 @@ const NAV = [
 ];
 
 export default function Header() {
-  const { resetData } = useApp();
-  const [confirm, setConfirm] = useState(false);
+  const { isAdmin } = useApp();
+  const { account, accounts } = useAuth();
+  const pending = isAdmin ? accounts.filter((a) => a.status === 'pending').length : 0;
+  const nav = isAdmin ? [...NAV, { to: '/admin', label: 'Admin', icon: ShieldCheck }] : NAV;
   return (
     <header className="z-[1100] border-b border-slate-200 bg-white">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 lg:px-6">
@@ -27,7 +28,7 @@ export default function Header() {
           </div>
         </div>
         <nav className="order-3 flex w-full gap-1 sm:order-none sm:w-auto">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -40,6 +41,7 @@ export default function Header() {
             >
               <Icon size={16} />
               {label}
+              {to === '/admin' && pending > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white">{pending}</span>}
             </NavLink>
           ))}
         </nav>
@@ -47,23 +49,18 @@ export default function Header() {
           <span className="hidden rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200 md:inline">
             {DEMO_LABEL}
           </span>
-          <Button size="sm" variant="ghost" icon={<RotateCcw size={14} />} onClick={() => setConfirm(true)}>
-            <span className="hidden sm:inline">Återställ demonstrationsdata</span>
-            <span className="sm:hidden">Återställ</span>
-          </Button>
+          <NavLink
+            to="/konto"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-100'}`
+            }
+          >
+            {account ? <UserRound size={14} /> : <LogIn size={14} />}
+            <span className="max-w-[140px] truncate">{account ? account.name : 'Logga in'}</span>
+            {account?.status === 'pending' && <span className="rounded-full bg-amber-100 px-1.5 text-[10px] text-amber-700">väntar</span>}
+          </NavLink>
         </div>
       </div>
-      <ConfirmDialog
-        open={confirm}
-        title="Återställ demonstrationsdata?"
-        message="Alla ändringar du har gjort (nya aktörer, resurser, behov och redigeringar) tas bort och den ursprungliga demonstrationsdatan laddas in igen."
-        confirmLabel="Återställ"
-        onCancel={() => setConfirm(false)}
-        onConfirm={() => {
-          resetData();
-          setConfirm(false);
-        }}
-      />
     </header>
   );
 }

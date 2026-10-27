@@ -5,6 +5,7 @@ import {
   Bot,
   Building,
   Factory,
+  LogIn,
   MapPin,
   Move,
   Network,
@@ -26,7 +27,9 @@ import {
   RESOURCE_STATUS_LABELS,
   TAG_LABELS,
 } from '../data/taxonomy';
+import { Link } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
+import { useAuth } from '../state/AuthContext';
 import { markerKind } from '../services/filtering';
 import { formatKm } from '../services/distanceCalculator';
 import { blankNeed, blankResource } from '../services/dataStore';
@@ -38,7 +41,8 @@ import { Badge, Button, ConfirmDialog, EmptyState, MarkerDot, MatchStatusBadge, 
 type Tab = 'profile' | 'flows' | 'matches';
 
 export default function ActorPanel({ actor }: { actor: Actor }) {
-  const { index, matches, selectActor, collabActorId, setCollabActorId, setFocusedMatchId, setEditor, deleteActor, deleteFacility } = useApp();
+  const { index, matches, selectActor, collabActorId, setCollabActorId, setFocusedMatchId, setEditor, deleteActor, deleteFacility, canEdit, ownActorId } = useApp();
+  const editable = canEdit(actor.id);
   const [tab, setTab] = useState<Tab>(collabActorId === actor.id ? 'matches' : 'profile');
   const [showInference, setShowInference] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -94,31 +98,36 @@ export default function ActorPanel({ actor }: { actor: Actor }) {
           </Badge>
           <Badge className="bg-slate-100 text-slate-600">{MARKER_LABELS[kind]}</Badge>
           {actor.source === 'user' && <Badge className="bg-violet-50 text-violet-700 ring-1 ring-violet-200">Användarregistrerad</Badge>}
+          {ownActorId === actor.id && <Badge className="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">Din verksamhet</Badge>}
         </div>
 
         <div className="mt-3.5 grid grid-cols-2 gap-2">
           <Button variant={collabActive ? 'secondary' : 'primary'} icon={collabActive ? <Undo2 size={15} /> : <Network size={15} />} onClick={toggleCollab} className="col-span-2">
             {collabActive ? 'Återgå till standardvy' : `Visa möjliga samarbeten (${viable.length})`}
           </Button>
-          <Button
-            variant="subtle"
-            className="!bg-violet-50 !text-violet-700 hover:!bg-violet-100"
-            icon={<Bot size={15} />}
-            onClick={() => {
-              setShowInference(true);
-              setTab('flows');
-            }}
-          >
-            <span className="truncate">Identifiera resurser</span>
-          </Button>
-          <div className="flex gap-2">
-            <Button className="flex-1" icon={<Pencil size={14} />} onClick={() => setEditor({ kind: 'actor-edit', actorId: actor.id })}>
-              Redigera
-            </Button>
-            <Button variant="danger" aria-label="Ta bort aktör" title="Ta bort aktör" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={15} />
-            </Button>
-          </div>
+          {editable && (
+            <>
+              <Button
+                variant="subtle"
+                className="!bg-violet-50 !text-violet-700 hover:!bg-violet-100"
+                icon={<Bot size={15} />}
+                onClick={() => {
+                  setShowInference(true);
+                  setTab('flows');
+                }}
+              >
+                <span className="truncate">Identifiera resurser</span>
+              </Button>
+              <div className="flex gap-2">
+                <Button className="flex-1" icon={<Pencil size={14} />} onClick={() => setEditor({ kind: 'actor-edit', actorId: actor.id })}>
+                  Redigera
+                </Button>
+                <Button variant="danger" aria-label="Ta bort aktör" title="Ta bort aktör" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 size={15} />
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -145,9 +154,11 @@ export default function ActorPanel({ actor }: { actor: Actor }) {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <div className="section-title">Arbetsställen ({facilities.length})</div>
-                <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setEditor({ kind: 'facility-create', actorId: actor.id })}>
-                  Lägg till
-                </Button>
+                {editable && (
+                  <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setEditor({ kind: 'facility-create', actorId: actor.id })}>
+                    Lägg till
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 {facilities.map((f, i) => (
@@ -163,16 +174,18 @@ export default function ActorPanel({ actor }: { actor: Actor }) {
                           {f.latitude.toFixed(4)}, {f.longitude.toFixed(4)}
                         </div>
                       </div>
-                      <div className="flex shrink-0 gap-0.5">
-                        <IconButton title="Flytta / redigera arbetsställe" onClick={() => setEditor({ kind: 'facility-edit', facilityId: f.id })}>
-                          <Move size={14} />
-                        </IconButton>
-                        {facilities.length > 1 && (
-                          <IconButton title="Ta bort arbetsställe" onClick={() => setConfirmFacility(f.id)} danger>
-                            <Trash2 size={14} />
+                      {editable && (
+                        <div className="flex shrink-0 gap-0.5">
+                          <IconButton title="Flytta / redigera arbetsställe" onClick={() => setEditor({ kind: 'facility-edit', facilityId: f.id })}>
+                            <Move size={14} />
                           </IconButton>
-                        )}
-                      </div>
+                          {facilities.length > 1 && (
+                            <IconButton title="Ta bort arbetsställe" onClick={() => setConfirmFacility(f.id)} danger>
+                              <Trash2 size={14} />
+                            </IconButton>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {f.processes.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
@@ -196,7 +209,7 @@ export default function ActorPanel({ actor }: { actor: Actor }) {
         )}
 
         {tab === 'flows' && (
-          <FlowsTab actor={actor} resources={resources} needs={needs} showInference={showInference} onCloseInference={() => setShowInference(false)} onOpenInference={() => setShowInference(true)} />
+          <FlowsTab actor={actor} editable={editable} resources={resources} needs={needs} showInference={showInference} onCloseInference={() => setShowInference(false)} onOpenInference={() => setShowInference(true)} />
         )}
 
         {tab === 'matches' && <MatchesTab actor={actor} matches={actorMatches} />}
@@ -235,6 +248,7 @@ export default function ActorPanel({ actor }: { actor: Actor }) {
 
 function FlowsTab({
   actor,
+  editable,
   resources,
   needs,
   showInference,
@@ -242,6 +256,7 @@ function FlowsTab({
   onOpenInference,
 }: {
   actor: Actor;
+  editable: boolean;
   resources: Resource[];
   needs: Need[];
   showInference: boolean;
@@ -256,7 +271,7 @@ function FlowsTab({
 
   return (
     <div className="space-y-5">
-      {showInference ? (
+      {!editable ? null : showInference ? (
         <InferencePanel actor={actor} onClose={onCloseInference} />
       ) : (
         resources.length === 0 && (
@@ -279,9 +294,11 @@ function FlowsTab({
           <div className="section-title flex items-center gap-1.5">
             <PackageOpen size={13} className="text-orange-500" /> Tillgängliga resurser ({resources.length})
           </div>
-          <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setResourceForm({ r: blankResource(firstFacility), isNew: true })}>
-            Ny resurs
-          </Button>
+          {editable && (
+            <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setResourceForm({ r: blankResource(firstFacility), isNew: true })}>
+              Ny resurs
+            </Button>
+          )}
         </div>
         {resources.length === 0 ? (
           <p className="rounded-lg bg-slate-50 px-3 py-3 text-center text-xs text-slate-400">Inga registrerade resurser</p>
@@ -296,8 +313,8 @@ function FlowsTab({
                 quantity={fmtQty(r.quantity, r.unit)}
                 verification={r.verificationStatus}
                 meta={[AVAILABILITY_LABELS[r.availability], RESOURCE_STATUS_LABELS[r.status], ...r.classification.map((t) => TAG_LABELS[t]), r.temperatureC != null ? `${r.temperatureC} °C` : null, r.source === 'inference' ? 'Från förslag' : null]}
-                onEdit={() => setResourceForm({ r, isNew: false })}
-                onDelete={() => deleteResource(r.id)}
+                onEdit={editable ? () => setResourceForm({ r, isNew: false }) : undefined}
+                onDelete={editable ? () => deleteResource(r.id) : undefined}
               />
             ))}
           </div>
@@ -309,9 +326,11 @@ function FlowsTab({
           <div className="section-title flex items-center gap-1.5">
             <Search size={13} className="text-blue-500" /> Behov ({needs.length})
           </div>
-          <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setNeedForm({ n: blankNeed(firstFacility), isNew: true })}>
-            Nytt behov
-          </Button>
+          {editable && (
+            <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => setNeedForm({ n: blankNeed(firstFacility), isNew: true })}>
+              Nytt behov
+            </Button>
+          )}
         </div>
         {needs.length === 0 ? (
           <p className="rounded-lg bg-slate-50 px-3 py-3 text-center text-xs text-slate-400">Inga registrerade behov</p>
@@ -326,8 +345,8 @@ function FlowsTab({
                 quantity={fmtQty(n.requiredQuantity, n.unit)}
                 verification={n.verificationStatus}
                 meta={[...n.technicalRequirements.map((t) => `Krav: ${TAG_LABELS[t].toLowerCase()}`), n.minTemperatureC != null ? `Min ${n.minTemperatureC} °C` : null, n.maxDistanceKm != null ? `Max ${n.maxDistanceKm} km` : null]}
-                onEdit={() => setNeedForm({ n, isNew: false })}
-                onDelete={() => deleteNeed(n.id)}
+                onEdit={editable ? () => setNeedForm({ n, isNew: false }) : undefined}
+                onDelete={editable ? () => deleteNeed(n.id) : undefined}
               />
             ))}
           </div>
@@ -442,8 +461,8 @@ function FlowCard({
   quantity: string;
   verification: Resource['verificationStatus'];
   meta: (string | null)[];
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <div className={`rounded-lg border border-l-[3px] border-slate-200 ${accent} bg-white p-3`}>
@@ -453,12 +472,16 @@ function FlowCard({
           <div className="text-xs text-slate-500">{subtitle}</div>
         </div>
         <div className="flex shrink-0 gap-0.5">
-          <IconButton title="Redigera" onClick={onEdit}>
-            <Pencil size={13} />
-          </IconButton>
-          <IconButton title="Ta bort" onClick={onDelete} danger>
-            <Trash2 size={13} />
-          </IconButton>
+          {onEdit && (
+            <IconButton title="Redigera" onClick={onEdit}>
+              <Pencil size={13} />
+            </IconButton>
+          )}
+          {onDelete && (
+            <IconButton title="Ta bort" onClick={onDelete} danger>
+              <Trash2 size={13} />
+            </IconButton>
+          )}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1">
@@ -514,7 +537,8 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
 }
 
 export function NoActorSelected() {
-  const { setEditor, setDraft, viableMatches, index, selectActor, setCollabActorId, setFocusedMatchId } = useApp();
+  const { setEditor, setDraft, viableMatches, index, selectActor, setCollabActorId, setFocusedMatchId, canCreate } = useApp();
+  const { account } = useAuth();
   const top = viableMatches.slice(0, 5);
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -525,18 +549,26 @@ export function NoActorSelected() {
         <p className="text-sm leading-relaxed text-slate-500">
           Klicka på en markör för att se aktörens resurser, behov och möjliga samarbeten – eller registrera en ny aktör direkt på kartan.
         </p>
-        <Button
-          variant="primary"
-          className="mt-4 w-full"
-          icon={<Plus size={16} />}
-          onClick={() => {
-            selectActor(null);
-            setDraft(null);
-            setEditor({ kind: 'actor-create' });
-          }}
-        >
-          Lägg till aktör på kartan
-        </Button>
+        {!canCreate ? (
+          !account && (
+            <Link to="/konto" className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              <LogIn size={16} /> Logga in eller registrera din verksamhet
+            </Link>
+          )
+        ) : (
+          <Button
+            variant="primary"
+            className="mt-4 w-full"
+            icon={<Plus size={16} />}
+            onClick={() => {
+              selectActor(null);
+              setDraft(null);
+              setEditor({ kind: 'actor-create' });
+            }}
+          >
+            Lägg till aktör på kartan
+          </Button>
+        )}
       </div>
       <div className="p-5">
         <div className="section-title mb-3">Starkaste matchningarna</div>

@@ -175,3 +175,26 @@ export interface Filters {
 }
 
 export type MarkerKind = 'resources' | 'needs' | 'both' | 'unmapped';
+
+// Konton och behörighet (simulerat i demon – ingen server)
+
+export type AccountRole = 'admin' | 'member';
+
+/** pending = väntar på admin, approved = får redigera, rejected = avvisad/återkallad */
+export type AccountStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Account {
+  id: string;
+  name: string;
+  email: string;
+  organisation: string;
+  /** Meddelande till admin vid registrering */
+  message: string;
+  /** Demo-hash, inte säker – se services/auth.ts */
+  passwordHash: string;
+  role: AccountRole;
+  status: AccountStatus;
+  /** Aktören som kontot får redigera. null = ingen kopplad ännu. */
+  actorId: string | null;
+  createdAt: string;
+}
