@@ -26,7 +26,17 @@ FÖRETAGSIDENTIFIERING → KARTLÄGGNING → RESURSER & BEHOV → MATCHNING → 
 
 **Identifiera potentiella resurser** – en *simulerad* AI-funktion som läser verksamhetsbeskrivning och processer och föreslår sannolika restströmmar med motivering. Förslagen kan granskas, redigeras, läggas till, avvisas eller markeras som verifierade.
 
-All data sparas i `localStorage`. Varje ändring kör om matchningsmotorn och uppdaterar karta, nyckeltal och listor. *Återställ demonstrationsdata* återgår till ursprungsläget.
+**Konton och administration** – alla kan se och söka utan att logga in. Den som vill lägga till sin verksamhet registrerar ett konto under *Logga in → Registrera konto*. Kontot väntar tills en administratör godkänner det under *Admin*, och kan då kopplas till en befintlig aktör eller lämnas utan så att användaren lägger till sin egen. Godkända medlemmar redigerar bara sin egen aktör (arbetsställen, resurser och behov); administratörer redigerar allt, kan återkalla behörighet och återställa demonstrationsdatan.
+
+Demokonton (gäller bara i demon):
+
+| Roll | E-post | Lösenord |
+|---|---|---|
+| Admin | `admin@demo.se` | `admin123` |
+| Medlem, kopplad till Vätterstrand Värmeverk | `varmeverk@demo.se` | `demo123` |
+| Väntande ansökan | `snickeri@demo.se` | `demo123` |
+
+All data sparas i `localStorage`. Varje ändring kör om matchningsmotorn och uppdaterar karta, nyckeltal och listor. *Återställ demonstrationsdata* (admin) återgår till ursprungsläget.
 
 ## Teknikstack
 
@@ -81,9 +91,11 @@ src/
     filtering.ts                 Index, markörstatus och filter
     dataStore.ts                 Rena CRUD-funktioner
     storage.ts                   localStorage-persistens
-  state/AppContext.tsx           Central state – kör om matchning vid varje ändring
+    auth.ts                      Simulerade konton, inloggning och behörighetsregler
+  state/AppContext.tsx           Central state – kör om matchning vid varje ändring, spärrar ändringar utan behörighet
+  state/AuthContext.tsx          Inloggat konto och adminåtgärder
   components/                    MapView, ActorPanel, ActorForm, ResourceForm, MatchCard, MatchAnalysis …
-  pages/                         MapPage, MatchesPage, ActorsPage
+  pages/                         MapPage, MatchesPage, ActorsPage, AccountPage, AdminPage
 ```
 
 UI, data, affärslogik, regler och persistens är separerade. Alla tjänster i `services/` är rena funktioner utan React-beroenden.
@@ -170,7 +182,8 @@ Med demonstrationsdatan ger motorn 67 genomförbara och 31 avvisade matchningar,
 - Inferens och språksökning är nyckelordsbaserade och förstår bara de mönster som finns i reglerna.
 - Data lagras endast i den egna webbläsaren (`localStorage`) – ingen delning mellan användare.
 - Kartunderlaget hämtas från OpenStreetMaps publika tile-server, vilket kräver internet och är avsett för begränsad användning.
-- Ingen autentisering, behörighetsstyrning eller versionshistorik.
+- Konton och behörigheter är simulerade i webbläsaren och ger inget riktigt skydd: lösenord hashas enkelt, och den som öppnar utvecklarverktygen kan ändra allt. Konton delas inte mellan webbläsare. För skarp drift behövs en backend (t.ex. Supabase Auth med radnivåregler) – `services/auth.ts` har samma funktioner som en sådan skulle ersätta.
+- Ingen versionshistorik.
 
 ## Nästa utvecklingssteg och integrationer
 

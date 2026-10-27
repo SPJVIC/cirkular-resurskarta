@@ -12,7 +12,7 @@ import { Button, MarkerDot } from '../components/ui';
 import { scoreColor } from '../components/scoreColor';
 
 export default function MapPage() {
-  const { data, index, filters, selectedActorId, collabActorId, setCollabActorId, setFocusedMatchId, matches, editor, setEditor, setDraft, selectActor } = useApp();
+  const { data, index, filters, selectedActorId, collabActorId, setCollabActorId, setFocusedMatchId, matches, editor, setEditor, setDraft, selectActor, canCreate } = useApp();
   const [showRejected, setShowRejected] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -92,7 +92,7 @@ export default function MapPage() {
         </div>
 
         {/* Lägg till-knapp */}
-        {!editor && (
+        {!editor && canCreate && (
           <div className="absolute right-3 top-14 z-[1000]">
             <Button variant="primary" icon={<Plus size={16} />} onClick={startCreate} className="shadow-lg">
               Lägg till aktör

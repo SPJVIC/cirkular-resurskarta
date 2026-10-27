@@ -3,20 +3,24 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { AppProvider } from '../../state/AppContext';
+import { AuthProvider } from '../../state/AuthContext';
+import { getSeedAccounts } from '../../services/auth';
 import { getSeedData } from '../../data/seed';
 import ActorPanel from '../ActorPanel';
 import StatsBar from '../StatsBar';
 import MatchesPage from '../../pages/MatchesPage';
 import ActorsPage from '../../pages/ActorsPage';
 
-const wrap = (ui: ReactNode) =>
+const wrap = (ui: ReactNode, sessionId: string | null = 'u-admin') =>
   render(
-    <AppProvider initialData={getSeedData()}>
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        {ui}
-        <StatsBar />
-      </MemoryRouter>
-    </AppProvider>,
+    <AuthProvider initialAccounts={getSeedAccounts()} initialSessionId={sessionId}>
+      <AppProvider initialData={getSeedData()}>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          {ui}
+          <StatsBar />
+        </MemoryRouter>
+      </AppProvider>
+    </AuthProvider>,
   );
 
 describe('gränssnitt', () => {
@@ -53,5 +57,23 @@ describe('gränssnitt', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Lägg till' })[0]);
     expect(Number(screen.getByTestId('stat-Resursflöden').textContent)).toBe(flowsBefore + 1);
     expect(Number(screen.getByTestId('stat-Matchningar').textContent)).toBeGreaterThan(before);
+  });
+
+  it('besökare ser aktören men inga redigeringsknappar', () => {
+    const seed = getSeedData();
+    wrap(<ActorPanel actor={seed.actors.find((a) => a.id === 'a14')!} />, null);
+    expect(screen.getByRole('button', { name: /Visa möjliga samarbeten/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Redigera/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Identifiera resurser/ })).not.toBeInTheDocument();
+  });
+
+  it('godkänd medlem kan redigera sin egen aktör men inte andras', () => {
+    const seed = getSeedData();
+    const { unmount } = wrap(<ActorPanel actor={seed.actors.find((a) => a.id === 'a01')!} />, 'u-a01');
+    expect(screen.getByRole('button', { name: /Redigera/ })).toBeInTheDocument();
+    expect(screen.getByText('Din verksamhet')).toBeInTheDocument();
+    unmount();
+    wrap(<ActorPanel actor={seed.actors.find((a) => a.id === 'a02')!} />, 'u-a01');
+    expect(screen.queryByRole('button', { name: /Redigera/ })).not.toBeInTheDocument();
   });
 });
